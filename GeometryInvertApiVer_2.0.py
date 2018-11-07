@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import maya.api.OpenMaya as om
 import time
 import math
-
+import maya.cmds as mc
 ###################################################################################################
 # Globals
 
@@ -197,6 +197,42 @@ class MirrorBlendshapes(object):
             self.setVertexCoords(self.MTargetDag, targetVertex, (src_vtx_pos[0] * -1, src_vtx_pos[1], src_vtx_pos[2]))
             self.setVertexCoords(self.MTargetDag, vtxIndex, (trg_vtx_pos[0] * -1, trg_vtx_pos[1], trg_vtx_pos[2]))
 
+    #################################################################################################
+    # mirror vertex from one side to the other in a mirrored geometry
+    #
+
+    def mirrorVertex(self, vertexArray, negToPos=True):
+        """
+            Description: mirror vertex from one side to the other in a mirrored geometry
+            @Param vertexArray: Array - Non zero vertex array
+            @Param negToPos: Bool - negative to positive or vice versa, True by default
+        """
+        for vtxIndex in vertexArray:
+            negativePos = [self.basePositionArray[vtxIndex][0] * -1, self.basePositionArray[vtxIndex][1], self.basePositionArray[vtxIndex][2]]
+            point = om.MPoint(negativePos[0], negativePos[1], negativePos[2])
+            targetVertex = self.getClosestVertex(self.MBaseDag, point)
+
+            if targetVertex is None:
+                continue
+
+            if negToPos:
+                src_vtx_pos = self.targetPositionArray[vtxIndex]
+                if targetVertex == vtxIndex:
+                    self.setVertexCoords(self.MTargetDag, targetVertex, (src_vtx_pos[0] * 0, src_vtx_pos[1], src_vtx_pos[2]))
+                    continue
+                #
+                if src_vtx_pos[0] * -1 <= 0:
+                    self.setVertexCoords(self.MTargetDag, targetVertex, (src_vtx_pos[0] * -1, src_vtx_pos[1], src_vtx_pos[2]))
+
+            else:
+                trg_vtx_pos = self.targetPositionArray[targetVertex]
+                if targetVertex == vtxIndex:
+                    self.setVertexCoords(self.MTargetDag, vtxIndex, (trg_vtx_pos[0] * 0, trg_vtx_pos[1], trg_vtx_pos[2]))
+                    continue
+                #
+                if trg_vtx_pos[0] * -1 >= 0:
+                    self.setVertexCoords(self.MTargetDag, vtxIndex, (trg_vtx_pos[0] * -1, trg_vtx_pos[1], trg_vtx_pos[2]))
+
 
 ###################################################################################################
 #
@@ -208,4 +244,5 @@ if __name__ == '__main__':
         MBsInstance = MirrorBlendshapes(baseMesh)
         MBsInstance.gatherMeshData(targetMesh)
         # Execute
-        MBsInstance.flipVertex(MBsInstance.currentNonZeroArray)
+        # MBsInstance.flipVertex(MBsInstance.currentNonZeroArray)
+        MBsInstance.mirrorVertex(MBsInstance.currentNonZeroArray, True)
